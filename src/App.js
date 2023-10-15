@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 export default function App() {
+  //lifting state
   const [items, setItems] = useState([]);
 
   function handleAddItems(item) {
@@ -9,6 +10,7 @@ export default function App() {
   function handleDeleteItems(id) {
     setItems((item) => item.filter((item) => item.id !== id));
   }
+  // adding togling functionality
   function handleToggleItem(id) {
     setItems((items) =>
       items.map((item) =>
@@ -17,13 +19,16 @@ export default function App() {
     );
   }
 
-  //lifting state
   return (
     <div className="app">
       <Logo />
       <Form onAddItems={handleAddItems} />
-      <PackingList items={items} onDeleteItems={handleDeleteItems} />
-      <Stats />
+      <PackingList
+        items={items}
+        onDeleteItems={handleDeleteItems}
+        onToggleItem={handleToggleItem}
+      />
+      <Stats items={items} />
     </div>
   );
 }
@@ -75,28 +80,84 @@ function Form({ onAddItems }) {
     </form>
   );
 }
-function PackingList({ items, onDeleteItems }) {
+function PackingList({ items, onDeleteItems, onToggleItem }) {
+  const [sortBy, setSortBy] = useState("input");
+
+  //sorting
+
+  let sortedItems;
+
+  if (sortBy === "input") sortedItems = items;
+
+  if (sortBy === "description")
+    sortedItems = items
+      .slice()
+      .sort((a, b) => a.description.localeCompare(b.description));
+  if (sortBy === "packed")
+    sortedItems = items
+      .slice()
+      .sort((a, b) => Number(a.packed) - Number(b.packed));
   return (
     <div className="list">
       <ul>
-        {items.map((item) => (
-          <Item item={item} key={item.id} onDeleteItems={onDeleteItems} />
+        {sortedItems.map((item) => (
+          <Item
+            item={item}
+            key={item.id}
+            onDeleteItems={onDeleteItems}
+            onToggleItem={onToggleItem}
+          />
         ))}
       </ul>
+      <div className="actions">
+        <select
+          name=""
+          id=""
+          value={sortBy}
+          onChange={(e) => setSortBy(e.target.value)}
+        >
+          <option value="input">Sort by the input order</option>
+          <option value="description">Sort by description</option>
+          <option value="packed">Sort packeded status</option>
+        </select>
+      </div>
     </div>
   );
 }
-function Stats() {
+function Stats({ items }) {
+  if (!items.length)
+    return (
+      <p className="stats">
+        <em>Start adding some items</em>
+      </p>
+    );
+  // derived state usage
+  const numItems = items.length;
+  const numPacked = items.filter((item) => item.packed).length;
+  const percentage = Math.round(numPacked / numItems) * 100;
   return (
     <div className="stats">
-      👜 You have X items on your list , and you already packed x(x%)
+      {percentage === 100 ? (
+        " You got everything Packed,You are Ready to go✈️"
+      ) : (
+        <em>
+          👜 You have {numItems} items on your list , and you already packed{" "}
+          {numPacked} ({percentage})%{" "}
+        </em>
+      )}
     </div>
   );
 }
-function Item({ item, onDeleteItems }) {
+function Item({ item, onDeleteItems, onToggleItem }) {
   return (
     <li>
-      <input type="checkbox" value={item.packed} onChange={() => {}} />
+      <input
+        type="checkbox"
+        value={item.packed}
+        onChange={() => {
+          onToggleItem(item.id);
+        }}
+      />
       <span style={item.packed ? { textDecoration: "line-through" } : {}}>
         {" "}
         {item.description} {item.qunatity}
